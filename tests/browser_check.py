@@ -1,6 +1,7 @@
 """Integration tests with synthetic data only. Never clinical validation."""
 from pathlib import Path
-from playwright.sync_api import sync_playwright
+import re
+from playwright.sync_api import sync_playwright, expect
 ROOT = Path(__file__).resolve().parents[1]
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
@@ -25,7 +26,8 @@ with sync_playwright() as p:
     page.locator('#demo').click()
     assert 'SINTÉTICO' in page.locator('#image-label').inner_text()
     page.locator('#segment').click()
-    page.wait_for_function("!document.getElementById('confirm').disabled")
+    # Locator assertions retry without evaluating a string inside the page's CSP.
+    expect(page.locator('#confirm')).to_be_enabled(timeout=15000)
     assert page.locator('#analyze').is_disabled()
     page.locator('#confirm').check()
     page.locator('#analyze').click()
@@ -71,7 +73,7 @@ with sync_playwright() as p:
     assert page.locator('#notes').input_value()==''
     assert page.locator('#report').is_disabled()
     page.locator('#file').set_input_files({'name':'not-image.png','mimeType':'image/png','buffer':b'not an image'})
-    page.wait_for_function("document.getElementById('feedback').classList.contains('error')")
+    expect(page.locator('#feedback')).to_have_class(re.compile(r'\berror\b'))
     assert page.locator('#analyze').is_disabled()
     assert not errors, errors
     browser.close()
