@@ -1,0 +1,8 @@
+_site/
+node_modules/
+__pycache__/
+tests/*.png
+.env
+.env.*
+uploads/
+photos/
